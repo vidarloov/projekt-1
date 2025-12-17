@@ -1,13 +1,11 @@
 id,name,hp,fuel,year,price
-0,BMW E30 325i,170,Bensin,1989,85000.0
-1,Saab 900 Turbo,175,Bensin,1991,49000.0
-2,Audi 80 B4,115,Bensin,1994,43000.0
-3,Subaru Impreza GT Turbo,211,Bensin,1998,99000.0
-4,BMW E34 540i,286,Bensin,1995,69000.0
-5,Saab 99 EMS,145,Bensin,1977,32000.0
-6,Audi 100 C3,136,Bensin,1987,29000.0
-7,Subaru Legacy RS,220,Bensin,1991,61000.0
-8,BMW E21 323i,143,Bensin,1982,49000.0
-9,Saab 9000 Aero,225,Bensin,1994,68000.0
-10,Audi Coupe GT,115,Bensin,1986,38000.0
-11,Subaru SVX,230,Bensin,1993,54000.0
+3,Subaru Legacy RS,220,Bensin,1991,61000.0
+4,Volvo 850 T-5R,240,Bensin,1995,85000.0
+5,Saab 9-3 Viggen,230,Bensin,2002,75000.0
+6,Toyota Supra Turbo,330,Bensin,1994,450000.0
+7,Nissan Skyline GT-R,280,Bensin,1999,350000.0
+8,Mazda RX-7,255,Bensin,1993,275000.0
+9,Honda Civic Type R,201,Bensin,2001,125000.0
+10,Mitsubishi Lancer Evo VI,280,Bensin,1999,195000.0
+11,Audi S4 B5,265,Bensin,2000,95000.0
+12,Mercedes-Benz E55 AMG,354,Bensin,1998,150000.0

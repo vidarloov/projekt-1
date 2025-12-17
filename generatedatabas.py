@@ -1,6 +1,6 @@
 import csv
 
-products = [
+bilar = [
     {
         "id": 0,
         "name": "BMW E30 325i",
@@ -115,6 +115,6 @@ csv_file_path = "db_bilar.csv"
 with open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
     writer = csv.DictWriter(file, fieldnames=["id", "name", "hp", "fuel", "year", "price", "quantity"])
     writer.writeheader()
-    writer.writerows(products)
+    writer.writerows(bilar)
 
 print(f"Data successfully saved to {csv_file_path}")

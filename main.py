@@ -1,148 +1,199 @@
 import csv
-import os
-import locale
 import curses
+import locale
+import os
 
-CSV_FILE = 'db_bilar.csv'
 
-def format_currency(value):
-    try:
-        return locale.currency(float(value), grouping=True)
-    except Exception:
-        return f"{float(value):,.2f} kr".replace(",", " ").replace(".", ",")
+CSV_FILE = "db_bilar.csv"
+locale.setlocale(locale.LC_ALL, '')
 
-def load_data(filename):
-    products = []
-    if not os.path.exists(filename):
-        # Skapa testfil om den saknas
-        with open(filename, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['id','name','hp','fuel','year','price'])
-            writer.writerow([1, 'BMW E30 325i', '170', 'Bensin', '1989', '85000'])
-            writer.writerow([2, 'Saab 900 Turbo', '175', 'Bensin', '1991', '49000'])
-            writer.writerow([3, 'Audi 80 B4', '115', 'Bensin', '1994', '43000'])
-            writer.writerow([4, 'Subaru Impreza GT', '211', 'Bensin', '1998', '99000'])
-    with open(filename, 'r', encoding='utf-8') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            products.append({
-                "id": int(row['id']),
-                "name": row['name'],
-                "hp": int(row['hp']),
-                "fuel": row['fuel'],
-                "year": int(row['year']),
-                "price": float(row['price'])
-            })
-    return products
 
-def save_data(filename, products):
-    with open(filename, 'w', newline='', encoding='utf-8') as file:
-        fieldnames = ["id", "name", "hp", "fuel", "year", "price"]
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
+# Ladda alla bilar från databasen
+def load_cars():
+    cars = []
+        
+    with open(CSV_FILE) as f:
+        for r in csv.DictReader(f):
+                car = {
+                        "id": int(r["id"]), 
+                        "name": r["name"], 
+                        "hp": int(r["hp"]), 
+                        "fuel": r["fuel"], 
+                        "year": int(r["year"]), 
+                        "price": float(r["price"])
+                    }
+                cars.append(car)
+    
+    return cars
+
+
+cars = load_cars()
+
+            
+# Hindrar texten från att bli för lång
+def truncate(text, max_len):
+    if len(text) > max_len:
+        return text[:max_len-3] + "..." 
+    return text
+
+
+# Spara till CSV filen
+def save_data():
+    with open(CSV_FILE, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["id","name","hp","fuel","year","price"])
         writer.writeheader()
-        for product in products:
-            writer.writerow(product)
+        for car in cars:
+            writer.writerow(car)
 
-def show_table_curses(products):
-    def _table(stdscr):
-        curses.curs_set(0)
-        curses.start_color()
-        curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-        selected = 0
-        col_id    = 4
-        col_name  = 22
-        col_hp    = 8
-        col_fuel  = 10
-        col_year  = 8
-        col_price = 14
 
-        while True:
-            stdscr.clear()
-            h, w = stdscr.getmaxyx()
-            # Header med tangentinfo
-            stdscr.attron(curses.color_pair(2))
-            stdscr.addstr(0, 0, " Lagedit 1.0 ".ljust(w-1))
-            stdscr.addstr(0, min(22, w-15), "[UPP/NED] Navigera [ENTER] Välj [N] Ny [S] Spara [ESC] Avsluta"[:w-23])
-            stdscr.attroff(curses.color_pair(2))
-            stdscr.attron(curses.color_pair(3))
-            headline = f"{'#':<{col_id}}{'NAMN':<{col_name}}{'HK':<{col_hp}}{'BRÄNSLE':<{col_fuel}}{'ÅR':<{col_year}}{'PRIS':>{col_price}}"
-            stdscr.addstr(2, 0, headline[:w-1])
-            stdscr.attroff(curses.color_pair(3))
-            stdscr.addstr(3, 0, "-" * (w-1))
-            table_start = 4
-            visible_rows = h - table_start - 2
-            start_idx = max(0, min(selected - visible_rows//2, max(0, len(products)-visible_rows)))
-            for idx, product in enumerate(products[start_idx:start_idx+visible_rows]):
-                abs_idx = start_idx + idx
-                name = product['name'][:col_name-1]
-                hp = str(product['hp'])
-                fuel = product['fuel'][:col_fuel-1]
-                year = str(product['year'])
-                price = format_currency(product['price'])
-                row = f"{product['id']:<{col_id}}{name:<{col_name}}{hp:<{col_hp}}{fuel:<{col_fuel}}{year:<{col_year}}{price:>{col_price}}"
-                if abs_idx == selected:
-                    stdscr.attron(curses.color_pair(1))
-                    stdscr.addstr(table_start + idx, 0, row[:w-1])
-                    stdscr.attroff(curses.color_pair(1))
-                else:
-                    stdscr.addstr(table_start + idx, 0, row[:w-1])
-            stdscr.refresh()
-            key = stdscr.getch()
-            if key == curses.KEY_DOWN and selected < len(products)-1:
-                selected += 1
-            elif key == curses.KEY_UP and selected > 0:
+# Visa statistik
+def show_statistics(stdscr):
+    stdscr.clear()
+    
+    
+    # Hitta dyraste och billigaste
+    dyrast = max(cars, key=lambda c: c['price'])
+    billigast = min(cars, key=lambda c: c['price'])
+    
+    
+    # Hitta starkaste
+    starkast = max(cars, key=lambda c: c['hp'])
+    
+    # Hitta nyaste och äldsta
+    nyast = max(cars, key=lambda c: c['year'])
+    aldst = min(cars, key=lambda c: c['year'])
+    
+    
+    # visa statistik
+    stdscr.addstr(0, 0, "STATISTIK")
+    stdscr.addstr(1, 0, "=" * 50)
+    stdscr.addstr(3, 0, f"Antal bilar: {len(cars)} st")
+    stdscr.addstr(5, 0, f"Dyrast: {dyrast['name']} - {int(dyrast['price']):,} kr".replace(",", " "))
+    stdscr.addstr(6, 0, f"Billigast: {billigast['name']} - {int(billigast['price']):,} kr".replace(",", " "))
+    stdscr.addstr(8, 0, f"Starkast: {starkast['name']} - {starkast['hp']} hk")
+    stdscr.addstr(10, 0, f"Nyast: {nyast['name']} ({nyast['year']})")
+    stdscr.addstr(11, 0, f"Äldst: {aldst['name']} ({aldst['year']})")
+    stdscr.addstr(13, 0, "Tryck valfri tangent")
+    stdscr.getch()
+
+
+# Visar detaljer
+def show_details(stdscr, car):
+    stdscr.clear()
+    stdscr.addstr(0,0,f"Bil: {car['name']}")
+    stdscr.addstr(1,0,f"Hästkrafter: {car['hp']}")
+    stdscr.addstr(2,0,f"Bränsle: {car['fuel']}")
+    stdscr.addstr(3,0,f"År: {car['year']}")
+    stdscr.addstr(4,0,f"Pris: {int(car['price']):,} kr".replace(",", " "))
+    stdscr.addstr(6,0,"Tryck valfri tangent")
+    stdscr.getch()
+
+
+# Ny eller redigera
+def input_car(stdscr, car=None):
+    curses.echo()
+    stdscr.clear()
+    if car:
+        stdscr.addstr(0,0,f"Redigera bil: {car['name']}")
+    else:
+        stdscr.addstr(0,0,"Lägg till ny bil")
+
+    stdscr.addstr(2,0,f"Namn [{car['name'] if car else ''}]: ")
+    name = stdscr.getstr().decode() or (car['name'] if car else "")
+
+    stdscr.addstr(3,0,f"Hästkrafter [{car['hp'] if car else ''}]: ")
+    hp_input = stdscr.getstr().decode()
+    hp = int(hp_input) if hp_input else (car['hp'] if car else 0)
+
+    stdscr.addstr(4,0,f"Bränsle [{car['fuel'] if car else ''}]: ")
+    fuel = stdscr.getstr().decode() or (car['fuel'] if car else "")
+
+    stdscr.addstr(5,0,f"År [{car['year'] if car else ''}]: ")
+    year_input = stdscr.getstr().decode()
+    year = int(year_input) if year_input else (car['year'] if car else 0)
+
+    stdscr.addstr(6,0,f"Pris [{int(car['price']) if car else ''}]: ")
+    price_input = stdscr.getstr().decode()
+    price = float(price_input) if price_input else (car['price'] if car else 0)
+
+    curses.noecho()
+    return name, hp, fuel, year, price
+
+
+# Skapar tabellen
+def view_cars_table(cars):
+    
+    top = f"{'ID':<4} {'NAMN':<22} {'HK':<5} {'BRÄNSLE':<10} {'ÅR':<6} {'PRIS':<15}"
+    separate = "=" * 65
+    rows = []
+    for car in cars:
+        price_str = f"{int(car['price']):,}".replace(",", " ") + " kr"
+        row = (
+            f"{str(car['id'])[:4]:<4} "
+            f"{truncate(car['name'], 22):<22} "
+            f"{truncate(str(car['hp']), 5):<5} "
+            f"{truncate(car['fuel'], 10):<10} "
+            f"{truncate(str(car['year']), 6):<6} "
+            f"{truncate(price_str, 15):<15}")
+        rows.append(row)
+    return "\n".join([top, separate] + rows)
+
+
+# Meny
+def main(stdscr):
+    selected = 0
+    while True:
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+        stdscr.addstr(0,0,"BILLISTA (upp/ned=bläddra, ENTER=info, N=ny, E=redigera, D=radera, T=statistik, S=spara, SPACE=avsluta)"[:w-1])
+
+        # Skriv tabellen
+        table_str = view_cars_table(cars)
+        for idx, line in enumerate(table_str.splitlines(), 2):
+            stdscr.addstr(idx, 0, line[:w-1])
+
+        # Markören
+        if cars:
+            marker_line = 4 + selected
+            stdscr.addstr(marker_line, 0, "->"[:w-1])
+
+        key = stdscr.getch()
+        
+        # Navigation
+        if cars:
+            if key == curses.KEY_UP and selected > 0:
                 selected -= 1
-            elif key == ord('n') or key == ord('N'):
-                # Lägg till ny produkt
-                curses.echo()
-                stdscr.clear()
-                stdscr.addstr(0, 0, "Lägg till ny bil:")
-                stdscr.addstr(1, 0, "Namn: ")
-                name = stdscr.getstr(1, 6, 40).decode("utf-8")
-                stdscr.addstr(2, 0, "Hästkrafter: ")
-                hp = int(stdscr.getstr(2, 13, 7).decode("utf-8"))
-                stdscr.addstr(3, 0, "Bränsletyp: ")
-                fuel = stdscr.getstr(3, 11, 10).decode("utf-8")
-                stdscr.addstr(4, 0, "Årsmodell: ")
-                year = int(stdscr.getstr(4, 11, 6).decode("utf-8"))
-                stdscr.addstr(5, 0, "Pris: ")
-                price = float(stdscr.getstr(5, 6, 15).decode("utf-8"))
-                curses.noecho()
-                new_id = max([p["id"] for p in products], default=0) + 1
-                products.append({
-                    "id": new_id,
-                    "name": name,
-                    "hp": hp,
-                    "fuel": fuel,
-                    "year": year,
-                    "price": price
-                })
-                stdscr.addstr(7, 0, f"Bilen '{name}' tillagd! Tryck valfri tangent.")
-                stdscr.getch()
-            elif key == ord('s') or key == ord('S'):
-                save_data(CSV_FILE, products)
-                stdscr.addstr(h-1, 0, "Sparat till fil! Tryck valfri tangent.")
-                stdscr.getch()
-            elif key == ord('\n'):
-                # Visa detaljer
-                p = products[selected]
-                stdscr.clear()
-                stdscr.addstr(0, 0, f"Bil: {p['name']}")
-                stdscr.addstr(1, 0, f"Hästkrafter: {p['hp']}")
-                stdscr.addstr(2, 0, f"Bränsle: {p['fuel']}")
-                stdscr.addstr(3, 0, f"Årsmodell: {p['year']}")
-                stdscr.addstr(4, 0, f"Pris: {format_currency(p['price'])}")
-                stdscr.addstr(6, 0, "[ESC] Tillbaka")
-                stdscr.refresh()
-                k = stdscr.getch()
-                # ESC går tillbaka, annars ignoreras
-            elif key == 27: # ESC
-                break
-    curses.wrapper(_table)
+            elif key == curses.KEY_DOWN and selected < len(cars)-1:
+                selected += 1
+            elif key == 10:  # ENTER visar detaljer
+                show_details(stdscr, cars[selected])
+            elif key == ord('e') or key == ord('E'):  # redigera bil
+                car = cars[selected]
+                name, hp, fuel, year, price = input_car(stdscr, car)
+                car['name'] = name
+                car['hp'] = hp
+                car['fuel'] = fuel
+                car['year'] = year
+                car['price'] = price
+            elif key == ord('d') or key == ord('D'):  # ta bort bil
+                cars.pop(selected)
+                if selected >= len(cars) and len(cars) > 0:
+                    selected = len(cars)-1
+                elif len(cars) == 0:
+                    selected = 0
+        
+        if key == ord('n') or key == ord('N'):  # ny bil
+            name, hp, fuel, year, price = input_car(stdscr)
+            new_id = max([c['id'] for c in cars], default=0) + 1
+            cars.append({"id": new_id, "name": name, "hp": hp, "fuel": fuel, "year": year, "price": price})
+            selected = len(cars) - 1
+        elif key == ord('t') or key == ord('T'):  # statistik
+            show_statistics(stdscr)
+        elif key == ord('s') or key == ord('S'):  # spara
+            save_data()
+            stdscr.addstr(len(cars)+6,0,"Sparat till databas. Tryck valfri tangent"[:w-1])
+            stdscr.getch()
+        elif key == ord(' '):  # SPACE avslutar
+            break
 
-locale.setlocale(locale.LC_ALL, 'sv_SE.UTF-8')  
-products = load_data(CSV_FILE)
-show_table_curses(products)
-# Programmet slutar här, ingen extra input/radering utanför curses längre.
+curses.wrapper(main)
