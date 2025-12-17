@@ -1,3 +1,7 @@
+__author__  = "Vidar Lööv"
+__version__ = "1.0.0"
+__email__   = "vidar.lööv@elev.ga.dbgy.se"
+
 import csv
 
 bilar = [
